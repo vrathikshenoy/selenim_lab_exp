@@ -268,3 +268,106 @@ All **7 test cases passed** successfully in **36.67 seconds**, demonstrating:
 8. ✅ Jenkins CI pipeline configured via `Jenkinsfile` for seamless automation
 
 The experiment successfully demonstrates advanced Selenium WebDriver techniques for testing complex web applications with proper automation best practices, reporting, and CI integration.
+
+---
+
+## Answers to Case Study & Hands-on Activity Questions
+
+### 1. Case Study
+
+**Q: How can the testing team handle dynamic web elements and AJAX calls?**
+
+In our implementation, we handled dynamic web elements and AJAX calls using **Explicit Waits** with `WebDriverWait` and `ExpectedConditions`. On the `/dynamic_controls` page, clicking the "Remove" button triggers an AJAX call that asynchronously removes a checkbox. Instead of using `time.sleep()`, we used:
+
+```python
+def wait_for_element_visible(driver, locator, timeout=15):
+    return WebDriverWait(driver, timeout).until(
+        EC.visibility_of_element_located(locator)
+    )
+```
+
+This polls the DOM until the dynamically loaded message element (`"It's gone!"`) becomes visible after the AJAX response completes. Similarly, clicking "Enable" triggers an AJAX call that changes the input field's state from disabled to enabled — our explicit wait waits for the confirmation message before proceeding to type into the now-enabled field. This approach ensures tests are **synchronized with the actual application state**, not arbitrary time delays.
+
+**Q: How can they identify web elements using XPath and CSS selectors?**
+
+We used advanced XPath and CSS strategies throughout our Page Objects:
+
+- **XPath `contains()`**: `(By.XPATH, "//input[@type='checkbox']")` — matches elements with partial attribute values
+- **XPath `text()`**: `(By.XPATH, "//button[text()='Click for JS Alert']")` — locates buttons by visible text
+- **XPath `descendant` axis**: `(By.XPATH, "//form[@id='input-example']//descendant::button")` — finds nested elements
+- **CSS attribute selectors**: `(By.CSS_SELECTOR, "#input-example input[type='text']")` — combines ID and attribute matching
+- **CSS ID selectors**: `(By.CSS_SELECTOR, "#mce_0_ifr")` — direct element identification
+
+These strategies are robust against DOM changes since they target element relationships and attributes rather than brittle absolute paths.
+
+**Q: How can they implement implicit and explicit waits to handle asynchronous page loads?**
+
+We implemented **both** wait types:
+
+- **Implicit Wait** — set globally in `conftest.py` with `driver.implicitly_wait(10)`. This provides a 10-second fallback for all `find_element` calls, handling basic element loading without explicit wait code.
+- **Explicit Waits** — implemented in `wait_utils.py` with 6 specialized functions: `wait_for_element_visible()`, `wait_for_element_clickable()`, `wait_for_alert_present()`, `wait_for_element_present()`, `wait_for_frame_available()`, and `wait_for_text_in_element()`. These use `WebDriverWait` with `ExpectedConditions` for precise synchronization with AJAX responses and dynamic state changes.
+
+**Q: How would they integrate Selenium tests with continuous integration tools like Jenkins?**
+
+We created a **Declarative Jenkins Pipeline** (`Jenkinsfile`) with the following stages:
+
+1. **Checkout** — pulls code from SCM
+2. **Setup Environment** — creates a Python virtual environment and installs dependencies via `pip install -r requirements.txt`
+3. **Run Tests** — executes `pytest` with `--html` and `--junitxml` reporting flags
+4. **Post-actions** — publishes the HTML report via `publishHTML`, archives JUnit XML for trend tracking, and saves failure screenshots
+
+This enables **seamless test automation** — every code push triggers the full test suite automatically.
+
+---
+
+### 2. Hands-on Activity
+
+#### 2a. How would participants identify and handle dynamic web elements, implement waits, and manage pop-ups and frames?
+
+**Dynamic Web Elements:** We used the Page Object Model (POM) pattern with a `BasePage` class that all pages inherit from. Each page defines locators as tuples `(By.XPATH, "...")` and action methods that incorporate explicit waits. For example, `DynamicControlsPage` encapsulates all interactions with AJAX-loaded controls.
+
+**Waits to Synchronize Execution:** Our `wait_utils.py` module provides centralized wait functions. For AJAX calls on `/dynamic_controls`, we wait for the response message:
+
+```python
+message = page.get_message_text()  # Uses wait_for_element_visible internally
+assert "enabled" in message.lower()
+```
+
+**Managing Pop-ups:** On `/javascript_alerts`, we demonstrated three types:
+
+- **JS Alert** → `alert.accept()` — accepted the alert, verified "You successfully clicked an alert"
+- **JS Confirm** → `alert.dismiss()` — dismissed the dialog, verified "You clicked: Cancel"
+- **JS Prompt** → `alert.send_keys("Hello from Selenium!")` then `alert.accept()` — sent text and verified it appeared in the result
+
+**Managing Frames:** On `/iframe`, we:
+
+1. Switched INTO the TinyMCE iframe: `driver.switch_to.frame(iframe_element)`
+2. Interacted with the contenteditable body inside the iframe
+3. Switched BACK to main content: `driver.switch_to.default_content()`
+4. Verified we could read the heading on the main page
+
+**Reporting Strategy:** We used `pytest-html` (Python equivalent of Extent Reports) configured in `pytest.ini`. A custom hook in `conftest.py` (`pytest_runtest_makereport`) automatically captures screenshots on test failure and embeds them in the HTML report for visual debugging.
+
+#### 2b. Implementation of advanced techniques, automation best practices, and CI integration
+
+As the automation testing lead, we established the following:
+
+**Framework Architecture:**
+
+- **Page Object Model** with `BasePage` → `DynamicControlsPage`, `IframePage`, `AlertsPage`
+- **Utility modules** for waits (`wait_utils.py`) and element interactions (`element_utils.py`)
+- **Pytest fixtures** in `conftest.py` for driver lifecycle management
+
+**Results — All 7 tests passed in 36.67 seconds:**
+
+| Test                                     | Technique Demonstrated                   |
+| ---------------------------------------- | ---------------------------------------- |
+| `test_remove_and_add_checkbox_via_ajax`  | Dynamic elements + AJAX + explicit waits |
+| `test_enable_input_field_via_ajax`       | AJAX state change + element interaction  |
+| `test_interact_with_iframe_editor`       | Iframe switching + content manipulation  |
+| `test_accept_js_alert`                   | JS Alert — accept                        |
+| `test_dismiss_js_confirm`                | JS Confirm — dismiss                     |
+| `test_send_text_to_js_prompt`            | JS Prompt — send text                    |
+| `test_full_advanced_automation_workflow` | End-to-end combining all techniques      |
+
+**CI Integration:** The `Jenkinsfile` provides a complete pipeline that any team can adopt — from checkout through testing to report publishing — enabling seamless, repeatable test automation on every code change.
