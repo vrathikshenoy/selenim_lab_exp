@@ -1,5 +1,5 @@
 """
-wait_utils.py - Explicit Wait Utilities (Step 3 of agent.md)
+wait_utils.py - Explicit Wait Utilities 
 ============================================================
 Case Study Requirement: Implement implicit AND explicit waits to handle
 asynchronous page loads and AJAX calls. Do NOT use time.sleep().

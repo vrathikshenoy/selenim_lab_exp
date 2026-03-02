@@ -1,5 +1,5 @@
 """
-element_utils.py - Advanced Element Interaction Utilities (Step 4 of agent.md)
+element_utils.py - Advanced Element Interaction Utilities 
 =============================================================================
 Case Study Requirement: Handle dynamic web elements, AJAX calls, identify
 elements using XPath and CSS selectors.

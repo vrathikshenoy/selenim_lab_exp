@@ -1,5 +1,5 @@
 """
-conftest.py - Base Framework Setup (Step 2 of agent.md)
+conftest.py - Base Framework Setup 
 =======================================================
 Case Study Requirement: Establish automation best practices with proper
 setup/teardown, implicit waits for basic element loading, and integrated
